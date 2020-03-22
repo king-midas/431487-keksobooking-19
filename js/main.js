@@ -6,6 +6,8 @@ var mapFilters = map.querySelector('.map__filters-container');
 var APARTMENT_TYPES = ['palace', 'flat', 'house', 'bungalo'];
 var APARTMENT_PHOTOS = ['http://o0.github.io/assets/images/tokyo/hotel1.jpg', 'http://o0.github.io/assets/images/tokyo/hotel2.jpg', 'http://o0.github.io/assets/images/tokyo/hotel3.jpg'];
 var APARTMENT_FEATURES = ['wifi', 'dishwasher', 'parking', 'washer', 'elevator', 'conditioner'];
+var APARTAMENT_TITLES = ['2-комн. квартира, 44,5 м²', '1-комн. квартира, 40 м²', '3-этажный коттедж, 500 м²', ''];
+var APARTAMENT_DESCRIPTIONS = ['Хороший ремонт, собственная парковка, охрана, видеонаблюдение', 'Высокий пешеходный трафик ,находится на красной линии, по главной улице', 'помещения с ремонтом красная линия в стоимость аренды не включены коммунальные платежи', '', ''];
 var BOOKINGS_COUNT = 8;
 var CHECKIN_TIMES = ['12:00', '13:00', '14:00'];
 var MIN_COORDINATE_Y = 130;
@@ -54,7 +56,7 @@ var getBookingsArray = function () {
         avatar: 'img/avatars/user0' + (i + 1) + '.png'
       },
       offer: {
-        title: 'Заголовок объявления',
+        title: APARTAMENT_TITLES[getRandom(APARTAMENT_TITLES.length - 1)],
         adress: locationX + ', ' + locationY,
         price: getRandom(MAX_PRICE) + 1,
         type: APARTMENT_TYPES[getRandom(APARTMENT_TYPES.length - 1)],
@@ -63,7 +65,7 @@ var getBookingsArray = function () {
         checkin: CHECKIN_TIMES[getRandom(CHECKIN_TIMES.length - 1)],
         checkout: CHECKIN_TIMES[getRandom(CHECKIN_TIMES.length - 1)],
         features: getRandomArray(APARTMENT_FEATURES, APARTMENT_FEATURES.length - 1),
-        description: 'Описание объявления',
+        description: APARTAMENT_DESCRIPTIONS[getRandom(APARTAMENT_DESCRIPTIONS.length - 1)],
         photos: getRandomArray(APARTMENT_PHOTOS, APARTMENT_PHOTOS.length),
         location: {
           x: locationX + 'px',
@@ -115,18 +117,57 @@ var createCard = function (cardData) {
   var cardPhotos = cardElement.querySelector('.popup__photos');
   var cardAvatar = cardElement.querySelector('.popup__avatar');
 
-  cardTitle.textContent = cardData.offer.title;
-  cardAddress.textContent = cardData.offer.adress;
-  cardPrice.textContent = cardData.offer.price + '₽/ночь';
-  cardType.textContent = apartmentTypesOnMap[cardData.offer.type];
-  cardCapacity.textContent = cardData.offer.rooms + ' комнаты для ' + cardData.offer.guests + ' гостей';
-  cardTime.textContent = 'Заезд после ' + cardData.offer.checkin + ', выезд до ' + cardData.offer.checkout;
-  cardDescription.textContent = cardData.offer.description;
-  cardAvatar.src = cardData.author.avatar;
+  if (cardData.offer.title) {
+    cardTitle.textContent = cardData.offer.title;
+  } else {
+    cardTitle.classList.add('hidden');
+  }
 
-  cardElement.querySelector('.popup__features').remove();
+  if (cardData.offer.adress) {
+    cardAddress.textContent = cardData.offer.adress;
+  } else {
+    cardAddress.classList.add('hidden');
+  }
 
-  var cardFeatures = document.createElement('ul');
+  if (cardData.offer.price) {
+    cardPrice.textContent = cardData.offer.price + '₽/ночь';
+  } else {
+    cardPrice.classList.add('hidden');
+  }
+
+  if (apartmentTypesOnMap[cardData.offer.type]) {
+    cardType.textContent = apartmentTypesOnMap[cardData.offer.type];
+  } else {
+    cardType.classList.add('hidden');
+  }
+
+  if (cardData.offer.rooms && cardData.offer.guests) {
+    cardCapacity.textContent = cardData.offer.rooms + ' комнаты для ' + cardData.offer.guests + ' гостей';
+  } else {
+    cardCapacity.classList.add('hidden');
+  }
+
+  if (cardData.offer.checkin && cardData.offer.checkout) {
+    cardTime.textContent = 'Заезд после ' + cardData.offer.checkin + ', выезд до ' + cardData.offer.checkout;
+  } else {
+    cardTime.classList.add('hidden');
+  }
+
+  if (cardData.offer.description) {
+    cardDescription.textContent = cardData.offer.description;
+  } else {
+    cardDescription.classList.add('hidden');
+  }
+
+  if (cardData.author.avatar) {
+    cardAvatar.src = cardData.author.avatar;
+  } else {
+    cardAvatar.classList.add('hidden');
+  }
+
+  var cardFeatures = cardElement.querySelector('.popup__features');
+  cardFeatures.innerHTML = '';
+
   cardFeatures.classList.add('popup__features');
 
   for (var j = 0; j < cardData.offer.features.length; j++) {
@@ -139,9 +180,11 @@ var createCard = function (cardData) {
 
   cardElement.insertBefore(cardFeatures, cardDescription);
 
-  for (var k = 0; k < cardData.offer.photos.length; k++) {
-    var imageTemplate = cardPhotos.querySelector('.popup__photo')
+  var imageTemplate = cardPhotos.querySelector('.popup__photo')
       .cloneNode(true);
+
+  for (var k = 0; k < cardData.offer.photos.length; k++) {
+
 
     imageTemplate.src = cardData.offer.photos[k];
 
@@ -157,3 +200,34 @@ var createCard = function (cardData) {
 fragment.appendChild(createCard(bookings[1]));
 
 map.insertBefore(fragment, mapFilters);
+
+var fieldsets = document.querySelectorAll('.ad-form__element');
+var filterSelects = map.querySelectorAll('.map__filter');
+var filterCheckboxFieldset = map.querySelector('.map__features');
+
+// функция для блокировки полей объявления и форм фильтрации
+var setDisableFieldset = function () {
+  fieldsets.forEach(function (item) {
+    item.setAttribute('disabled', 'disabled');
+  });
+  filterSelects.forEach(function (item) {
+    item.setAttribute('disabled', 'disabled');
+  });
+  filterCheckboxFieldset.setAttribute('disabled', 'disabled');
+};
+
+// по умолчанию все поля деактивируем
+setDisableFieldset();
+
+// // функция для разблокировки полей объявления и форм фильтрации
+// var removeDisableFieldset = function () {
+//   fieldsets.forEach(function (item) {
+//     item.removeAttribute('disabled');
+//   });
+//   filterSelects.forEach(function (item) {
+//     item.removeAttribute('disabled');
+//   });
+//   filterCheckboxFieldset.removeAttribute('disabled');
+// };
+
+// 9. Личный проект: доверяй, но проверяй (часть 1)
